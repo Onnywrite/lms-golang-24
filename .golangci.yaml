@@ -1,0 +1,87 @@
+run:
+  timeout: 5m
+  tests: true
+output:
+  formats:
+    - format: colored-line-number
+  sort-results: true
+  sort-order:
+    - severity
+    - file
+    - linter
+issues:
+  max-same-issues: 0
+  fix: true
+  exclude-rules:
+    - linters:
+        - errcheck
+      source: "\\.Rollback()"
+  exclude-dirs:
+    - bin
+    - mocks
+    - _.+
+    - ignore-.*
+  exclude-files:
+    - ".*\\.pb\\.go"
+    - _.+
+    - ignore-.*
+linters-settings:
+  funlen:
+    lines: 100
+    statements: 40
+    ignore-comments: true
+  revive:
+    severity: warning
+  varnamelen:
+    max-distance: 10
+    ignore-type-assert-ok: true
+    ignore-map-index-ok: true
+    ignore-chan-recv-ok: true
+    ignore-names:
+      - err
+      - tx
+      - id
+      - db
+    ignore-decls:
+      - c fiber.Ctx
+      - c echo.Context
+      - c Config
+      - t testing.T
+      - m map[string]int
+      - mp map[string]int
+  grouper:
+    import-require-single-import: true
+  testifylint:
+    enable-all: true
+  gci:
+    skip-generated: true
+    custom-order: true
+    sections:
+      - standard
+      - localmodule
+      - blank
+      - default
+  lll:
+    line-length: 100
+  nlreturn:
+    block-size: 2
+linters:
+  enable-all: true
+  disable:
+    # deprecated
+    - execinquery
+    - exportloopref
+    - gomnd
+    # That's not what I need
+    - depguard
+    # useless for my project
+    - wrapcheck
+    # I know, what I'm doing
+    - ireturn
+    # for me, capsed words like 'HTTPTLS' don't look good
+    # I prefer like 'HttpTls'
+    - stylecheck
+    # I like not to name interface params if they are obvious
+    - inamedparam
+    # why am I forbidden to use globals when I need them??
+    - gochecknoglobals
