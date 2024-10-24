@@ -9,8 +9,10 @@ import (
 	"github.com/Onnywrite/lms-golang-24/pkg/calc"
 )
 
+const verySusExitCode = 52
+
 func main() {
-	fmt.Print("Enter an expression: ")
+	fmt.Print("Enter an expression: ") //nolint: forbidigo
 
 	buf := bufio.NewReader(os.Stdin)
 
@@ -19,10 +21,9 @@ func main() {
 
 	result, err := calc.Calc(expression)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(52)
-		return
+		fmt.Println(err) //nolint: forbidigo
+		os.Exit(verySusExitCode)
 	}
 
-	fmt.Printf("Result: %v\n", result)
+	fmt.Printf("Result: %v\n", result) //nolint: forbidigo
 }

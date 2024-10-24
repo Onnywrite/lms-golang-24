@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	// Syntax errors
+	// Syntax errors.
 	ErrUnclosedParentheses = errors.New("unclosed parentheses")
 	ErrNotEnoughOperands   = errors.New("not enough operands")
 	ErrUnknownOperator     = errors.New("unknown operator")
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrEmptyExpression     = errors.New("empty expression")
-	// Math errors
+	// Math errors.
 	ErrDivisionByZero = errors.New("division by zero")
 	ErrZeroBase       = errors.New("zero to a non-positive exponent")
 	ErrNegativeBase   = errors.New("negative base to a non-integer exponent")
@@ -115,7 +115,7 @@ func parseExpression(tokens []string) (float64, error) {
 		"^": 3,
 	}
 
-	for i := 0; i < len(tokens); i++ {
+	for i := range tokens {
 		token := tokens[i]
 
 		if token == "(" {
