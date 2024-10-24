@@ -20,6 +20,7 @@ func main() {
 	result, err := calc.Calc(expression)
 	if err != nil {
 		fmt.Println(err)
+		os.Exit(52)
 		return
 	}
 
