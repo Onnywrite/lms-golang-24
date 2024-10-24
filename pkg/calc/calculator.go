@@ -56,6 +56,10 @@ func tokenize(expression string) ([]string, error) {
 			} else {
 				tokens = append(tokens, string(char))
 			}
+		case 'e':
+			number.WriteString(strconv.FormatFloat(math.E, 'f', -1, 64))
+		case 'p':
+			number.WriteString(strconv.FormatFloat(math.Pi, 'f', -1, 64))
 		default:
 			number.WriteRune(char)
 		}
