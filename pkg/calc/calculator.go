@@ -1,6 +1,5 @@
 package calc
 
-// TODO: negative numbers (2^(-1), 3*(-10), ...)
 import (
 	"errors"
 	"fmt"
@@ -37,16 +36,26 @@ func tokenize(expression string) ([]string, error) {
 		number strings.Builder
 	)
 
-	for _, char := range expression {
+	for i, char := range expression {
 		switch char {
 		case ' ', '\t':
 			continue
-		case '+', '-', '*', '/', '^', '(', ')':
+		case '+', '*', '/', '^', '(', ')':
 			if number.Len() > 0 {
 				tokens = append(tokens, number.String())
 				number.Reset()
 			}
 			tokens = append(tokens, string(char))
+		case '-':
+			if number.Len() > 0 {
+				tokens = append(tokens, number.String())
+				number.Reset()
+			}
+			if i == 0 || expression[i-1] == '(' || isOperator(string(expression[i-1])) {
+				number.WriteRune(char)
+			} else {
+				tokens = append(tokens, string(char))
+			}
 		default:
 			number.WriteRune(char)
 		}
@@ -61,6 +70,10 @@ func tokenize(expression string) ([]string, error) {
 	}
 
 	return tokens, nil
+}
+
+func isOperator(token string) bool {
+	return token == "+" || token == "-" || token == "*" || token == "/" || token == "^"
 }
 
 func validate(tokens []string) error {
