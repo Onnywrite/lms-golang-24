@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	httpserver "github.com/Onnywrite/lms-golang-24/internal/http-server"
 	"github.com/Onnywrite/lms-golang-24/pkg/grace"
 	"github.com/Onnywrite/lms-golang-24/pkg/logger"
 
@@ -26,8 +27,13 @@ type Config struct {
 }
 
 func New() *App {
+	port := os.Getenv("SERVER_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
 	return NewWithConfig(Config{
-		Port: os.Getenv("SERVER_PORT"),
+		Port: port,
 	})
 }
 
@@ -38,6 +44,8 @@ func NewWithConfig(c Config) *App {
 	server.HideBanner = true
 	server.HTTPErrorHandler = echoErrorHandler()
 	server.Use(middleware.Recover(), middleware.CORS(), contextWithLogger(log))
+
+	httpserver.RegisterApiV1(server.Group("/api/v1"))
 
 	return &App{
 		log:    log,
@@ -57,6 +65,8 @@ func (a *App) Run(ctx context.Context) error {
 		}
 	}()
 
+	a.registerHealthcheck()
+
 	return a.apps.WaitAndClose(ctx) //nolint:wrapcheck
 }
 
@@ -75,7 +85,7 @@ func echoErrorHandler() echo.HTTPErrorHandler {
 			he = &echo.HTTPError{
 				Internal: nil,
 				Code:     http.StatusInternalServerError,
-				Message:  "Internal server error",
+				Message:  "internal server error",
 			}
 		}
 
@@ -90,8 +100,8 @@ func echoErrorHandler() echo.HTTPErrorHandler {
 			return
 		}
 
-		if he.Message != "" {
-			_, _ = c.Response().Write([]byte(he.Message.(string)))
-		}
+		_ = c.JSON(he.Code, echo.Map{
+			"error": he.Message,
+		})
 	}
 }
