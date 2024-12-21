@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	// Syntax errors
+	// Syntax errors.
 	ErrUnclosedParentheses = errors.New("unclosed parentheses")
 	ErrNotEnoughOperands   = errors.New("not enough operands")
 	ErrUnknownOperator     = errors.New("unknown operator")
 	ErrInvalidToken        = errors.New("invalid token")
 	ErrEmptyExpression     = errors.New("empty expression")
-	// Math errors
+	// Math errors.
 	ErrDivisionByZero = errors.New("division by zero")
 	ErrZeroBase       = errors.New("zero to a non-positive exponent")
 	ErrNegativeBase   = errors.New("negative base to a non-integer exponent")
@@ -40,26 +40,33 @@ func tokenize(expression string) ([]string, error) {
 		switch char {
 		case ' ', '\t':
 			continue
+
 		case '+', '*', '/', '^', '(', ')':
 			if number.Len() > 0 {
 				tokens = append(tokens, number.String())
 				number.Reset()
 			}
+
 			tokens = append(tokens, string(char))
+
 		case '-':
 			if number.Len() > 0 {
 				tokens = append(tokens, number.String())
 				number.Reset()
 			}
+
 			if i == 0 || expression[i-1] == '(' || isOperator(string(expression[i-1])) {
-				number.WriteRune(char)
+				_, _ = number.WriteRune(char)
 			} else {
 				tokens = append(tokens, string(char))
 			}
+
 		case 'e':
 			number.WriteString(strconv.FormatFloat(math.E, 'f', -1, 64))
+
 		case 'p':
 			number.WriteString(strconv.FormatFloat(math.Pi, 'f', -1, 64))
+
 		default:
 			number.WriteRune(char)
 		}
@@ -88,6 +95,7 @@ func validate(tokens []string) error {
 
 	// Check parentheses
 	openParentheses := 0
+
 	for _, token := range tokens {
 		if token == "(" {
 			openParentheses++
@@ -103,42 +111,59 @@ func validate(tokens []string) error {
 	return nil
 }
 
+const (
+	plusPredence  = 1
+	minusPredence = 1
+	multPredence  = 2
+	divPredence   = 2
+	powPredence   = 3
+)
+
+var precedence = map[string]int{
+	"+": plusPredence,
+	"-": minusPredence,
+	"*": multPredence,
+	"/": divPredence,
+	"^": powPredence,
+}
+
 func parseExpression(tokens []string) (float64, error) {
 	stack := make([]float64, 0, len(tokens))
 	operators := make([]string, 0, len(tokens))
 
-	precedence := map[string]int{
-		"+": 1,
-		"-": 1,
-		"*": 2,
-		"/": 2,
-		"^": 3,
-	}
-
-	for i := 0; i < len(tokens); i++ {
+	for i := range tokens {
 		token := tokens[i]
 
-		if token == "(" {
+		_, isOperator := precedence[token]
+
+		switch {
+		case token == "(":
 			operators = append(operators, token)
-		} else if token == ")" {
+
+		case token == ")":
 			for len(operators) > 0 && operators[len(operators)-1] != "(" {
 				if err := applyOperator(&stack, &operators); err != nil {
 					return 0, err
 				}
 			}
+
 			operators = operators[:len(operators)-1]
-		} else if _, ok := precedence[token]; ok {
+
+		case isOperator:
 			for len(operators) > 0 && precedence[operators[len(operators)-1]] >= precedence[token] {
 				if err := applyOperator(&stack, &operators); err != nil {
 					return 0, err
 				}
 			}
+
 			operators = append(operators, token)
-		} else {
+
+		default:
 			value, err := strconv.ParseFloat(token, 64)
 			if err != nil {
 				return 0, fmt.Errorf("%w: %s", ErrInvalidToken, token)
 			}
+
 			stack = append(stack, value)
 		}
 	}
@@ -160,6 +185,7 @@ func applyOperator(stack *[]float64, operators *[]string) error {
 		if len(*stack) > 0 && (*operators)[len(*operators)-1] == "-" {
 			(*stack)[len(*stack)-1] *= -1
 			*operators = (*operators)[:len(*operators)-1]
+
 			return nil
 		}
 
@@ -175,19 +201,24 @@ func applyOperator(stack *[]float64, operators *[]string) error {
 	*operators = (*operators)[:len(*operators)-1]
 
 	var result float64
+
 	switch operator {
 	case "+":
 		result = a + b
+
 	case "-":
 		result = a - b
+
 	case "*":
 		result = a * b
+
 	case "/":
 		if b == 0 {
 			return fmt.Errorf("%w: %f/%f", ErrDivisionByZero, a, b)
 		}
 
 		result = a / b
+
 	case "^":
 		// We can't calc 0^I if I <= 0, because it's undefined.
 		if a == 0 && b <= 0 {
@@ -204,6 +235,7 @@ func applyOperator(stack *[]float64, operators *[]string) error {
 		}
 
 		result = math.Pow(a, b)
+
 	default:
 		return fmt.Errorf("%w: %s", ErrUnknownOperator, operator)
 	}
