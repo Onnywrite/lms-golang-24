@@ -21,7 +21,7 @@ var (
 	ErrNegativeBase   = errors.New("negative base to a non-integer exponent")
 )
 
-func Calc(expression string) (float64, error) {
+func Calculate(expression string) (float64, error) {
 	tokens, err := tokenize(expression)
 	if err != nil {
 		return 0, err

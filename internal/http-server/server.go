@@ -30,7 +30,7 @@ func CalculateHand() echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 		}
 
-		result, err := calc.Calc(req.Expression)
+		result, err := calc.Calculate(req.Expression)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusUnprocessableEntity, err.Error())
 		}

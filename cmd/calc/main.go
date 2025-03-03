@@ -19,7 +19,7 @@ func main() {
 	expression, _ := buf.ReadString('\n')
 	expression = strings.TrimSpace(expression)
 
-	result, err := calc.Calc(expression)
+	result, err := calc.Calculate(expression)
 	if err != nil {
 		_, _ = fmt.Println(err) //nolint: forbidigo
 

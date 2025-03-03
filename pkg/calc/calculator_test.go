@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCalc(t *testing.T) {
+func TestCalculate(t *testing.T) {
 	tt := []struct {
 		name     string
 		input    string
@@ -47,7 +47,7 @@ func TestCalc(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := calc.Calc(tc.input)
+			result, err := calc.Calculate(tc.input)
 			if assert.ErrorIs(t, err, tc.err) {
 				assert.InDelta(t, tc.expected, result, 0.00001)
 			}
