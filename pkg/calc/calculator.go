@@ -21,20 +21,186 @@ var (
 	ErrNegativeBase   = errors.New("negative base to a non-integer exponent")
 )
 
-func Calculate(expression string) (float64, error) {
+// Calculator represents a stateful calculator for long-running operations.
+type Calculator struct {
+	stack     []float64
+	operators []string
+	tokens    []string
+}
+
+// NewCalculator initializes a new Calculator instance.
+func NewCalculator(expression string) (*Calculator, error) {
 	tokens, err := tokenize(expression)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Calculator{
+		stack:     make([]float64, len(tokens)),
+		operators: make([]string, len(tokens)),
+		tokens:    tokens,
+	}, nil
+}
+
+// Calculate processes the tokens and computes the result.
+func (c *Calculator) Calculate() (float64, error) {
+	for len(c.tokens) > 0 {
+		token := c.tokens[0]
+		c.tokens = c.tokens[1:]
+
+		switch {
+		case token == "(":
+			c.operators = append(c.operators, token)
+
+		case token == ")":
+			for len(c.operators) > 0 && c.operators[len(c.operators)-1] != "(" {
+				err := c.applyOperator()
+				if err != nil {
+					return 0, err
+				}
+			}
+
+			c.operators = c.operators[:len(c.operators)-1]
+
+		case PrecedenceOf(token) != 0:
+			for len(c.operators) > 0 && PrecedenceOf(c.operators[len(c.operators)-1]) >= PrecedenceOf(token) {
+				err := c.applyOperator()
+				if err != nil {
+					return 0, err
+				}
+			}
+
+			c.operators = append(c.operators, token)
+
+		default:
+			value, err := strconv.ParseFloat(token, 64)
+			if err != nil {
+				return 0, fmt.Errorf("%w: %s", ErrInvalidToken, token)
+			}
+			c.stack = append(c.stack, value)
+		}
+	}
+
+	for len(c.operators) > 0 {
+		err := c.applyOperator()
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if len(c.stack) == 0 {
+		return 0, ErrEmptyExpression
+	}
+
+	return c.stack[0], nil
+}
+
+// applyOperator applies the top operator to the operands on the stack.
+func (c *Calculator) applyOperator() error {
+	if len(c.stack) < 2 {
+		if len(c.stack) > 0 && c.operators[len(c.operators)-1] == "-" {
+			c.stack[len(c.stack)-1] *= -1
+			c.operators = c.operators[:len(c.operators)-1]
+
+			return nil
+		}
+
+		// But if the last operand in not minus, we lack of operands.
+		return fmt.Errorf("%w for %s", ErrNotEnoughOperands, c.operators[len(c.operators)-1])
+	}
+
+	b := c.stack[len(c.stack)-1]
+	a := c.stack[len(c.stack)-2]
+	c.stack = c.stack[:len(c.stack)-2]
+
+	operator := c.operators[len(c.operators)-1]
+	c.operators = c.operators[:len(c.operators)-1]
+
+	var result float64
+
+	switch operator {
+	case "+":
+		// TODO: add sleep
+		result = a + b
+
+	case "-":
+		// TODO: add sleep
+		result = a - b
+
+	case "*":
+		// TODO: add sleep
+		result = a * b
+
+	case "/":
+		if b == 0 {
+			return fmt.Errorf("%w: %f/%f", ErrDivisionByZero, a, b)
+		}
+
+		// TODO: add sleep
+		result = a / b
+
+	case "^":
+		// We can't calc 0^I if I <= 0, because it's undefined.
+		if a == 0 && b <= 0 {
+			return fmt.Errorf("%w: %f^%f", ErrZeroBase, a, b)
+		}
+
+		// We can't raise a negative number to a non-integer power.
+		//
+		// Here is why:
+		//  (-2)^(1.5) = (-2)^(3/2) = sqrt((-2)^3) = sqrt(-8)
+		// the result is a complex number, which my calculator doesn't support.
+		if a < 0 && math.Trunc(b) != b {
+			return fmt.Errorf("%w: %f^%f", ErrNegativeBase, a, b)
+		}
+
+		// TODO: add sleep
+		result = math.Pow(a, b)
+
+	default:
+		return fmt.Errorf("%w: %s", ErrUnknownOperator, operator)
+	}
+
+	c.stack = append(c.stack, result)
+
+	return nil
+}
+
+// Calculate is a wrapper of [Calculator.Calculate] method.
+func Calculate(expr string) (float64, error) {
+	c, err := NewCalculator(expr)
 	if err != nil {
 		return 0, err
 	}
 
-	return parseExpression(tokens)
+	return c.Calculate()
+}
+
+// PrecedenceOf returns the precedence level of an operator.
+func PrecedenceOf(op string) int {
+	const (
+		plusPredence = 1
+		multPredence = 2
+		powPredence  = 3
+	)
+
+	switch op {
+	case "+", "-":
+		return plusPredence
+
+	case "*", "/":
+		return multPredence
+
+	case "^":
+		return powPredence
+	}
+
+	return 0
 }
 
 func tokenize(expression string) ([]string, error) {
-	var (
-		tokens []string
-		number strings.Builder
-	)
+	number := strings.Builder{}
+	tokens := make([]string, 16)
 
 	for i, char := range expression {
 		switch char {
@@ -88,12 +254,10 @@ func isOperator(token string) bool {
 }
 
 func validate(tokens []string) error {
-	// Check length of tokens
 	if len(tokens) == 0 {
 		return ErrEmptyExpression
 	}
 
-	// Check parentheses
 	openParentheses := 0
 
 	for _, token := range tokens {
@@ -107,140 +271,6 @@ func validate(tokens []string) error {
 	if openParentheses != 0 {
 		return ErrUnclosedParentheses
 	}
-
-	return nil
-}
-
-const (
-	plusPredence  = 1
-	minusPredence = 1
-	multPredence  = 2
-	divPredence   = 2
-	powPredence   = 3
-)
-
-var precedence = map[string]int{
-	"+": plusPredence,
-	"-": minusPredence,
-	"*": multPredence,
-	"/": divPredence,
-	"^": powPredence,
-}
-
-func parseExpression(tokens []string) (float64, error) {
-	stack := make([]float64, 0, len(tokens))
-	operators := make([]string, 0, len(tokens))
-
-	for i := range tokens {
-		token := tokens[i]
-
-		_, isOperator := precedence[token]
-
-		switch {
-		case token == "(":
-			operators = append(operators, token)
-
-		case token == ")":
-			for len(operators) > 0 && operators[len(operators)-1] != "(" {
-				if err := applyOperator(&stack, &operators); err != nil {
-					return 0, err
-				}
-			}
-
-			operators = operators[:len(operators)-1]
-
-		case isOperator:
-			for len(operators) > 0 && precedence[operators[len(operators)-1]] >= precedence[token] {
-				if err := applyOperator(&stack, &operators); err != nil {
-					return 0, err
-				}
-			}
-
-			operators = append(operators, token)
-
-		default:
-			value, err := strconv.ParseFloat(token, 64)
-			if err != nil {
-				return 0, fmt.Errorf("%w: %s", ErrInvalidToken, token)
-			}
-
-			stack = append(stack, value)
-		}
-	}
-
-	for len(operators) > 0 {
-		if err := applyOperator(&stack, &operators); err != nil {
-			return 0, err
-		}
-	}
-
-	return stack[0], nil
-}
-
-func applyOperator(stack *[]float64, operators *[]string) error {
-	if len(*stack) < 2 {
-		// If the last operator is a minus and we don't have
-		// enough operands, we can assume that the last operator is a negative number
-		// and we multiply the last operand by -1.
-		if len(*stack) > 0 && (*operators)[len(*operators)-1] == "-" {
-			(*stack)[len(*stack)-1] *= -1
-			*operators = (*operators)[:len(*operators)-1]
-
-			return nil
-		}
-
-		// But if the last operand in not minus, we lack of operands.
-		return fmt.Errorf("%w for %s", ErrNotEnoughOperands, (*operators)[len(*operators)-1])
-	}
-
-	b := (*stack)[len(*stack)-1]
-	a := (*stack)[len(*stack)-2]
-	*stack = (*stack)[:len(*stack)-2]
-
-	operator := (*operators)[len(*operators)-1]
-	*operators = (*operators)[:len(*operators)-1]
-
-	var result float64
-
-	switch operator {
-	case "+":
-		result = a + b
-
-	case "-":
-		result = a - b
-
-	case "*":
-		result = a * b
-
-	case "/":
-		if b == 0 {
-			return fmt.Errorf("%w: %f/%f", ErrDivisionByZero, a, b)
-		}
-
-		result = a / b
-
-	case "^":
-		// We can't calc 0^I if I <= 0, because it's undefined.
-		if a == 0 && b <= 0 {
-			return fmt.Errorf("%w: %f^%f", ErrZeroBase, a, b)
-		}
-
-		// We can't raise a negative number to a non-integer power.
-		//
-		// Here is why:
-		//  (-2)^(1.5) = (-2)^(3/2) = sqrt((-2)^3) = sqrt(-8)
-		// the result is a complex number, which my calculator doesn't support.
-		if a < 0 && math.Trunc(b) != b {
-			return fmt.Errorf("%w: %f^%f", ErrNegativeBase, a, b)
-		}
-
-		result = math.Pow(a, b)
-
-	default:
-		return fmt.Errorf("%w: %s", ErrUnknownOperator, operator)
-	}
-
-	*stack = append(*stack, result)
 
 	return nil
 }
