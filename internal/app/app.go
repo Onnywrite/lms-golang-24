@@ -7,6 +7,7 @@ import (
 	"os"
 
 	httpserver "github.com/Onnywrite/lms-golang-24/internal/http-server"
+	"github.com/Onnywrite/lms-golang-24/internal/service/orchestrator"
 	"github.com/Onnywrite/lms-golang-24/pkg/grace"
 	"github.com/Onnywrite/lms-golang-24/pkg/logger"
 
@@ -45,7 +46,9 @@ func NewWithConfig(c Config) *App {
 	server.HTTPErrorHandler = echoErrorHandler()
 	server.Use(middleware.Recover(), middleware.CORS(), contextWithLogger(log))
 
-	httpserver.RegisterApiV1(server.Group("/api/v1"))
+	orch := orchestrator.New(orchestrator.Dependencies{})
+
+	httpserver.RegisterApiV1(server.Group("/api/v1"), orch)
 
 	return &App{
 		log:    log,
