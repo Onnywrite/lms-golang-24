@@ -21,33 +21,45 @@ var (
 	ErrNegativeBase   = errors.New("negative base to a non-integer exponent")
 )
 
+// Operator represents a mathematical operator.
+type Operator string
+
+const (
+	OpAdd      Operator = "+"
+	OpSubtract Operator = "-"
+	OpMultiply Operator = "*"
+	OpDivide   Operator = "/"
+	OpPower    Operator = "^"
+)
+
 // Calculator represents a stateful calculator for long-running operations.
 type Calculator struct {
-	stack     []float64
-	operators []string
-	tokens    []string
+	stack      []float64
+	operators  []string
+	tokens     []string
+	valueStack []int
+	tree       []Node
 }
 
 // NewCalculator initializes a new Calculator instance.
 func NewCalculator(expression string) (*Calculator, error) {
-	tokens, err := tokenize(expression)
+	tokens, err := Tokenize(expression)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Calculator{
-		stack:     make([]float64, len(tokens)),
-		operators: make([]string, len(tokens)),
-		tokens:    tokens,
+		stack:      make([]float64, 0, len(tokens)),
+		operators:  make([]string, 0, len(tokens)),
+		tokens:     tokens,
+		valueStack: make([]int, 0, len(tokens)),
+		tree:       make([]Node, 0, len(tokens)),
 	}, nil
 }
 
 // Calculate processes the tokens and computes the result.
 func (c *Calculator) Calculate() (float64, error) {
-	for len(c.tokens) > 0 {
-		token := c.tokens[0]
-		c.tokens = c.tokens[1:]
-
+	for _, token := range c.tokens {
 		switch {
 		case token == "(":
 			c.operators = append(c.operators, token)
@@ -77,6 +89,7 @@ func (c *Calculator) Calculate() (float64, error) {
 			if err != nil {
 				return 0, fmt.Errorf("%w: %s", ErrInvalidToken, token)
 			}
+
 			c.stack = append(c.stack, value)
 		}
 	}
@@ -198,9 +211,9 @@ func PrecedenceOf(op string) int {
 	return 0
 }
 
-func tokenize(expression string) ([]string, error) {
+func Tokenize(expression string) ([]string, error) {
 	number := strings.Builder{}
-	tokens := make([]string, 16)
+	tokens := make([]string, 0, 16)
 
 	for i, char := range expression {
 		switch char {
@@ -221,7 +234,7 @@ func tokenize(expression string) ([]string, error) {
 				number.Reset()
 			}
 
-			if i == 0 || expression[i-1] == '(' || isOperator(string(expression[i-1])) {
+			if i == 0 || expression[i-1] == '(' || IsOperator(string(expression[i-1])) {
 				_, _ = number.WriteRune(char)
 			} else {
 				tokens = append(tokens, string(char))
@@ -249,8 +262,12 @@ func tokenize(expression string) ([]string, error) {
 	return tokens, nil
 }
 
-func isOperator(token string) bool {
-	return token == "+" || token == "-" || token == "*" || token == "/" || token == "^"
+func IsOperator(token string) bool {
+	return token == string(OpAdd) ||
+		token == string(OpSubtract) ||
+		token == string(OpMultiply) ||
+		token == string(OpDivide) ||
+		token == string(OpPower)
 }
 
 func validate(tokens []string) error {
