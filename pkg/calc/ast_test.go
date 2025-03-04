@@ -16,19 +16,19 @@ func TestBuildAST(t *testing.T) {
 	require.NoError(t, err)
 
 	expectedTree := []calc.Node{
-		{nil, "", val(2.2)},
-		{nil, "", val(25)},
-		{nil, "", val(0.5)},
-		{[]int{1, 2}, calc.OpPower, null()},
-		{nil, "", val(1)},
-		{nil, "", val(2)},
-		{nil, "", val(-5)},
-		{[]int{5, 6}, calc.OpPower, null()},
-		{[]int{4, 7}, calc.OpAdd, null()},
-		{[]int{3, 8}, calc.OpMultiply, null()},
-		{nil, "", val(26)},
-		{[]int{9, 10}, calc.OpDivide, null()},
-		{[]int{0, 11}, calc.OpMultiply, null()},
+		/* 0: */ {nil, "", val(2.2)},
+		/* 1: */ {nil, "", val(25)},
+		/* 2: */ {nil, "", val(0.5)},
+		/* 3: */ {[]int{1, 2}, calc.OpPower, null()},
+		/* 4: */ {nil, "", val(1)},
+		/* 5: */ {nil, "", val(2)},
+		/* 6: */ {nil, "", val(-5)},
+		/* 7: */ {[]int{5, 6}, calc.OpPower, null()},
+		/* 8: */ {[]int{4, 7}, calc.OpAdd, null()},
+		/* 9: */ {[]int{3, 8}, calc.OpMultiply, null()},
+		/* 10: */ {nil, "", val(26)},
+		/* 11: */ {[]int{9, 10}, calc.OpDivide, null()},
+		/* 12: */ {[]int{0, 11}, calc.OpMultiply, null()},
 	}
 
 	require.Equal(t, expectedTree, []calc.Node(tree))

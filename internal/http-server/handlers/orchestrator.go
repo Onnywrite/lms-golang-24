@@ -2,8 +2,10 @@ package handlers
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
+	"github.com/Onnywrite/lms-golang-24/internal/model"
 	"github.com/Onnywrite/lms-golang-24/internal/service/orchestrator"
 	"github.com/Onnywrite/lms-golang-24/pkg/erix"
 	"github.com/google/uuid"
@@ -43,16 +45,16 @@ func (h Orchestrator) Calculate() echo.HandlerFunc {
 			return echo.NewHTTPError(erix.HttpCode(err), erix.LastReason(err))
 		}
 
-		return c.JSON(http.StatusOK, Response{Id: result.ExpressionId})
+		return c.JSON(http.StatusOK, Response{Id: result.Expression.Id})
 	}
 }
 
 func (h Orchestrator) Expressions() echo.HandlerFunc {
 	type Expression struct {
-		Id     uuid.UUID `json:"id"`
-		Status string    `json:"status"`
-		Result float64   `json:"result"`
-		Error  *string   `json:"error,omitempty"`
+		Id     uuid.UUID         `json:"id"`
+		Status model.Status      `json:"status"`
+		Result sql.Null[float64] `json:"result,omitempty"`
+		Error  sql.Null[string]  `json:"error,omitempty"`
 	}
 
 	type Response struct {
@@ -76,10 +78,10 @@ func (h Orchestrator) Expressions() echo.HandlerFunc {
 
 func (h Orchestrator) ExpressionById() echo.HandlerFunc {
 	type Response struct {
-		Id     uuid.UUID `json:"id"`
-		Status string    `json:"status"`
-		Result float64   `json:"result"`
-		Error  *string   `json:"error,omitempty"`
+		Id     uuid.UUID         `json:"id"`
+		Status string            `json:"status"`
+		Result sql.Null[float64] `json:"result"`
+		Error  sql.Null[string]  `json:"error,omitempty"`
 	}
 
 	return func(c echo.Context) error {

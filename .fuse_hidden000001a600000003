@@ -1,0 +1,42 @@
+let config = {
+  input = {
+    xlib = {
+      required = true;
+      minVersion = "1.2.1";
+    };
+  };
+
+  output = { xlib, ... }@inputs: let
+    authority = {
+      name = "Original Pidors Authority";
+      shortName = "OP";
+      index = 0;
+    };
+    baseUser = xlib.mkBaseUser {
+        role = xlib.roles.artist;
+        authorities = [ xlib.linkAuthority { inherit (authority) index; } ];
+    };
+  in {
+    users = [
+      xlib.mkUserBasedOn baseUser {
+        name = "ONNY";
+      }
+      xlib.mkUserBasedOn baseUser {
+        name = "T0dd Howard";
+      }
+    ];
+
+    authorities = [ xlib.mkAuthority { inherit (authority) name shortName; } ];
+
+    categories = [ "Gay Remixes" ];
+  };
+};
+  xlib = {
+    mkBaseUser = { ... }@set:  { inherit set; };
+    roles.artist = "artist";
+    linkAuthority = { ... }@set: { authorityIdx = 0; };
+    mkUserBasedOn = base: { ... }@set: base // { inherit set; };
+    mkAuthority = { name, shortName, ... }@args: { inherit name shortName args; };
+  };
+in
+  config.output { inherit xlib; }
